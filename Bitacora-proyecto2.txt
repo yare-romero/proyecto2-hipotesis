@@ -1,0 +1,307 @@
+﻿Proyecto 2 Hipotesis 
+Teresa Hernández Deméneghi
+Carla Yarenni Romero Vargas 
+
+
+ HITO 1 IDENTIFICAR Y ELIMINAR NULOS
+   ---Nos arroja las filas donde al menos en una columna exista un nulo---
+SELECT
+  track_id,
+  in_apple_playlists,
+  in_apple_charts,
+  in_deezer_playlists,
+  in_deezer_charts,
+  in_shazam_charts
+FROM
+  `proyecto-spotify-1.spotify_ds.track_in_competition`
+WHERE
+  track_id IS NULL
+  OR in_apple_playlists IS NULL
+  OR in_apple_charts IS NULL
+  OR in_deezer_playlists IS NULL
+  OR in_deezer_charts IS NULL
+  OR in_shazam_charts IS NULL;
+ ---Nos arroja los valores nulos de la columna seleccionada---
+SELECT
+  in_shazam_charts
+FROM
+  `proyecto-spotify-1.spotify_ds.track_in_competition`
+WHERE
+  in_shazam_charts IS NULL;
+ --- Nos arroja la cantidad total de nulos de la columna seleccionada---
+ --- in_shazam_charts tiene 50 nulos---
+SELECT
+  COUNT(*)
+FROM
+  `proyecto-spotify-1.spotify_ds.track_in_competition`
+WHERE
+  in_shazam_charts IS NULL;
+
+
+
+
+
+
+
+
+
+
+
+
+ HITO 1 IDENTIFICAR Y ELIMINAR DUPLICADOS
+
+
+--Este comando obtiene los duplicados de dos columnas y la arroja en una nueva columna llamada "total" y al final lo que te arroja solo son los que tengan duplicados por ello el "having count"
+SELECT track_name, count(track_name) as total
+from `proyecto-spotify-1.spotify_ds.track_in_spotify`
+group by track_name
+having count(track_name) > 1;
+
+
+--Esto me arroja únicamente los datos que salieron repetidos anteriormente junto con todas las demas columnas de la tabla para analizar si los demas valores se repiten
+SELECT *
+from `proyecto-spotify-1.spotify_ds.track_in_spotify`
+where (track_name = 'SNAP' and artist_s__name = 'Rosa Linn')
+or (track_name = 'About Damn Time' and artist_s__name ='Lizzo')
+or (track_name = 'Take My Breath' and artist_s__name = 'The Weeknd')
+or (track_name = 'SPIT IN MY FACE!' and artist_s__name = 'ThxSoMch');
+
+
+--Este comando me arroja una columna en orden ascendente
+--Podemos observar que hay un track id "0:00" el cual coincidimos en removerlo cuando lo pasemos a una tabla limpia.
+SELECT track_id
+from `proyecto-spotify-1.spotify_ds.track_in_spotify`
+Order by track_id asc;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ HITO 1 DATOS DISCREPANTES
+
+
+SELECT
+  *
+FROM
+  `proyecto-spotify-1.spotify_ds.track_in_spotify`
+WHERE
+  track_name LIKE '%B%'; --REGEXCP_REPLACE reemplaza todo lo que NO sea alfanumérico y lo pone en otra columna –
+
+
+
+
+SELECT
+  track_name,
+  REGEXP_REPLACE (track_name, r'[^a-zA-Z0-9]', ' ') AS track_name_clean
+FROM
+  `proyecto-spotify-1.spotify_ds.track_in_spotify`; --Este comando nos regresa en una columna especial todas las canciones que tengan caracteres especiales teniendo 330 en total–
+
+
+
+
+SELECT
+  LOWER(track_name),
+  REGEXP_CONTAINS(track_name, r'[^a-zA-Z0-9 ]') AS is_selected
+FROM
+  `proyecto-spotify-1.spotify_ds.track_in_spotify`
+WHERE
+  REGEXP_CONTAINS(track_name, r'[^a-zA-Z0-9 ]') = TRUE;
+
+
+
+
+ HITO 1  MANEJAR DATOS DISCREPANTES EN VARIABLES NUMERICAS
+--- #Verificar, hubo un error con la variable streams, por un registro
+SELECT MAX(released_day) as max_day, MIN(released_day) as min_day, ROUND(AVG(released_day),2) as avg_day,
+      MAX(released_month) as max_month, MIN(released_month) as min_month, ROUND(AVG(released_month),2) as avg_month,
+      MAX(released_year) as max_year, MIN(released_year) as min_year, ROUND(AVG(released_year),2) as avg_year,
+      MAX(in_spotify_charts) as max_chart, MIN(in_spotify_charts) as min_chart, ROUND(AVG(in_spotify_charts),2) as avg_chart,
+      MAX(in_spotify_playlists) as max_playlists, MIN(in_spotify_playlists) as min_playlists, ROUND(AVG(in_spotify_playlists),2) as avg_playlists,
+     -- MAX(streams) as max_streams, MIN(streams) as min_streams, ROUND(AVG(streams),2) as avg_streams  --Error por tipo string
+
+
+HITO 1 CREAR NUEVAS VARIABLES
+
+
+SELECT CAST(track_id AS INT64) AS track_id_clean,
+      REGEXP_REPLACE(track_name, r'[^a-zA-Z0-9 ]' , ' ') AS track_name_clean,
+      REGEXP_REPLACE(artist_s__name, r'[^a-zA-Z0-9 ]' , ' ') AS artist_s__name_clean,
+      released_year, released_month, CAST(CONCAT(released_year ,'-', released_month, '-', released_day) AS date) as release_date,
+       in_spotify_charts, in_spotify_playlists, in_spotify_charts + in_spotify_playlists AS in_spotify_total,
+      CAST(streams AS INT64) AS streams_clean
+FROM `proyecto-spotify.spotify_ds.track_in_spotify`
+
+
+
+
+HITO 1 LIMPIEZA DE DATOS
+
+
+SELECT
+  CAST(track_id AS INT64) AS track_id_clean,
+  REGEXP_REPLACE (track_name, r'[^a-zA-Z0-9]', ' ') AS track_name_clean,
+  REGEXP_REPLACE (artist_s__name, r'[^a-zA-Z0-9]', ' ') AS artist_s__name_clean,
+  --Utilizando CAST y CONCAT obtuve una nueva columna con la fecha de lanzamiento con tipo de dato DATE--
+  released_year, released_month,
+  CAST(CONCAT(released_year,-released_month,-released_day)AS DATE) AS released_date,
+  -- utilizando un operador matemático sume ambas columnas para obtener las playlists o charts en total--
+  in_spotify_charts,in_spotify_playlists, in_spotify_charts + in_spotify_playlists AS in_spotify_total,
+  CAST(streams AS INT64) AS streams_clean
+FROM
+  `proyecto-spotify-1.spotify_ds.track_in_spotify` 
+WHERE--Aquí le decimos que NO nos traiga nada que tenga B para eliminar el valor erróneo en streams y el de track_id
+  streams NOT LIKE '%B%'
+  AND track_id NOT LIKE '%:%'
+  AND track_id != '5675634'
+  AND track_id != '3814670'
+  AND track_id != '7173596'
+  AND track_id != '5080031'
+  AND track_id != '1119309'
+  AND track_id != '4586215'
+  AND track_id != '4967469'
+  AND track_id != '8173823'
+HITO 1 UNIÓN DE TABLAS, OBTENCIÓN DE CUARTILES Y CATEGORÍAS
+
+
+WITH Quartiles AS(
+  SELECT track_id_clean, streams_clean, bpm, in_total_charts, in_total_playlists,danceability__,valence__,energy__,acousticness__, instrumentalness__, liveness__, speechiness__,
+  NTILE(4) OVER (ORDER BY streams_clean) AS quartile_streams,
+  NTILE(4) OVER (ORDER BY bpm) AS quartile_bpm,
+  NTILE(4) OVER (ORDER BY in_total_charts) AS quartile_charts,
+  NTILE(4) OVER (ORDER BY in_total_playlists) AS quartile_playlists,
+  CASE
+    WHEN danceability__ <= 25 THEN 1
+    WHEN danceability__ <= 50 THEN 2
+    WHEN danceability__ <= 75 THEN 3
+    ELSE 4
+  END as quartile_danceability,
+
+
+CASE
+    WHEN valence__ <= 25 THEN 1
+    WHEN valence__ <= 50 THEN 2
+    WHEN valence__ <= 75 THEN 3
+    ELSE 4
+  END as quartile_valence,
+
+
+  CASE
+    WHEN energy__ <= 25 THEN 1
+    WHEN energy__ <= 50 THEN 2
+    WHEN energy__ <= 75 THEN 3
+    ELSE 4
+  END as quartile_energy,
+
+
+  CASE
+    WHEN acousticness__ <= 25 THEN 1
+    WHEN acousticness__ <= 50 THEN 2
+    WHEN acousticness__ <= 75 THEN 3
+    ELSE 4
+  END as quartile_acousticness,
+
+
+  CASE
+    WHEN instrumentalness__ <= 25 THEN 1
+    WHEN instrumentalness__ <= 50 THEN 2
+    WHEN instrumentalness__ <= 75 THEN 3
+    ELSE 4
+  END as quartile_instrumentalness,
+ 
+  CASE
+    WHEN liveness__ <= 25 THEN 1
+    WHEN liveness__ <= 50 THEN 2
+    WHEN liveness__ <= 75 THEN 3
+    ELSE 4
+  END as quartile_liveness,
+
+
+CASE
+    WHEN speechiness__ <= 25 THEN 1
+    WHEN speechiness__ <= 50 THEN 2
+    WHEN speechiness__ <= 75 THEN 3
+    ELSE 4
+  END as quartile_speechiness,
+  FROM
+   `proyecto-spotify-1.spotify_ds.all_data`
+)
+SELECT
+a.*,
+Quartiles.quartile_streams,
+Quartiles.quartile_bpm,
+Quartiles.quartile_charts,
+Quartiles.quartile_playlists,
+Quartiles.quartile_danceability,
+Quartiles.quartile_valence,
+Quartiles.quartile_energy,
+Quartiles.quartile_acousticness,
+Quartiles.quartile_instrumentalness,
+Quartiles.quartile_liveness,
+Quartiles.quartile_speechiness,
+IF(Quartiles.quartile_streams = 4, 'Alto','Bajo') AS streams_category,
+IF(Quartiles.quartile_bpm = 4, 'Alto','Bajo') AS bpm_category,
+IF(Quartiles.quartile_charts = 4, 'Alto','Bajo') AS charts_category,
+IF(Quartiles.quartile_playlists = 4, 'Alto','Bajo') AS playlists_category,
+IF(Quartiles.quartile_danceability = 4, 'Alto','Bajo') AS danceability_category,
+IF(Quartiles.quartile_valence = 4, 'Alto','Bajo') AS valence_category,
+IF(Quartiles.quartile_energy = 4, 'Alto','Bajo') AS energy_category,
+IF(Quartiles.quartile_acousticness = 4, 'Alto','Bajo') AS acousticness_category,
+IF(Quartiles.quartile_instrumentalness = 4, 'Alto','Bajo') AS instrumentalness_category,
+IF(Quartiles.quartile_liveness = 4, 'Alto','Bajo') AS liveness_category,
+IF(Quartiles.quartile_speechiness = 4, 'Alto','Bajo') AS speechiness_category,
+
+
+FROM `proyecto-spotify-1.spotify_ds.all_data` a
+
+
+LEFT JOIN Quartiles
+ON a.track_id_clean= Quartiles.track_id_clean;
+
+
+
+
+
+
+HITO 1 CORRELACIÓN
+
+
+SELECT
+CORR(acousticness__,streams_clean) AS corraco_streams,
+CORR(danceability__, streams_clean) AS corrdan_streams,
+CORR(liveness__,streams_clean) AS corrliv_streams,
+CORR(energy__, streams_clean) AS correner_streams,
+CORR(valence__, streams_clean) AS corrval_streams,
+CORR(instrumentalness__, streams_clean) AS corrinst_streams,
+CORR(speechiness__, streams_clean) AS corrspeech_streams,
+from `proyecto-spotify-1.spotify_ds.all_data`
